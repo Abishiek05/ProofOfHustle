@@ -72,6 +72,7 @@ export class MemStorage implements IStorage {
     const id = this.currentUserId++;
     const user: User = {
       ...insertUser,
+      telegramId: insertUser.telegramId || null,
       id,
       role: "unverified",
       paymentPlan: null,
@@ -99,6 +100,7 @@ export class MemStorage implements IStorage {
     const id = this.currentApplicationId++;
     const application: Application = {
       ...insertApplication,
+      telegramId: insertApplication.telegramId || null,
       id,
       userId: null, // Will be set when user is created
       status: "pending",
@@ -136,6 +138,8 @@ export class MemStorage implements IStorage {
     const id = this.currentProjectId++;
     const newProject: Project = {
       ...project,
+      techStack: project.techStack || null,
+      metrics: project.metrics || null,
       id,
       category: "rookie",
       approvedBy: null,

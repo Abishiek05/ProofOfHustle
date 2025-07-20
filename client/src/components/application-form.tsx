@@ -241,7 +241,7 @@ export function ApplicationForm() {
             <Checkbox
               id="agreement"
               checked={agreed}
-              onCheckedChange={setAgreed}
+              onCheckedChange={(checked) => setAgreed(checked as boolean)}
             />
             <Label htmlFor="agreement" className="text-sm text-gray-700">
               I agree to the{" "}

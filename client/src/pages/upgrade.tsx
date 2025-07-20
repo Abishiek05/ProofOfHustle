@@ -2,247 +2,274 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { authStore } from "@/lib/auth";
-import { User } from "@shared/schema";
-import { Check, Crown, CreditCard, Smartphone, University, ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserLocation, getPricingForCountry } from "@/lib/geolocation";
+import { Check, Star, Crown, Loader2, CreditCard, Zap, Globe } from "lucide-react";
+
+interface PricingData {
+  currency: string;
+  symbol: string;
+  premium: { 3: number; 6: number; 12: number };
+  innerCircle: { 3: number; 6: number; 12: number };
+}
 
 export default function Upgrade() {
-  const [user, setUser] = useState<User | null>(authStore.getUser());
-  const [selectedDuration, setSelectedDuration] = useState<3 | 6 | 12>(3);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [pricingData, setPricingData] = useState<PricingData | null>(null);
+  const [locationInfo, setLocationInfo] = useState<any>(null);
+  const { currentUser, userProfile } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = authStore.subscribe(setUser);
-    return unsubscribe;
+    const loadPricing = async () => {
+      try {
+        const location = await getUserLocation();
+        const pricing = getPricingForCountry(location.countryCode);
+        setLocationInfo(location);
+        setPricingData(pricing);
+      } catch (error) {
+        console.error('Failed to load pricing:', error);
+        // Fallback to USD pricing
+        const defaultPricing = getPricingForCountry('US');
+        setPricingData(defaultPricing);
+      }
+    };
+
+    loadPricing();
   }, []);
 
-  const pricingPlans = {
-    premium: {
-      3: 299,
-      6: 499,
-      12: 899,
-    },
-    inner: {
-      3: 999,
-      6: 1799,
-      12: 2999,
-    },
+  const handleUpgrade = async (plan: string, duration: number, amount: number) => {
+    setIsProcessing(true);
+    try {
+      // Simulate Stripe integration
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast({
+        title: "Upgrade Successful! 🚀",
+        description: `You've been upgraded to ${plan} for ${duration} months. Welcome to the elite network!`,
+      });
+      
+      // In real implementation, this would:
+      // 1. Create Stripe payment session
+      // 2. Update user profile in Firestore
+      // 3. Generate Hustler ID card
+      // 4. Add to Telegram groups
+      
+    } catch (error) {
+      toast({
+        title: "Payment Failed",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const handlePayment = (planType: "premium" | "inner") => {
-    // In a real app, this would integrate with Razorpay
-    console.log(`Initiating ${planType} payment for ${selectedDuration} months`);
-    alert(`Payment integration would be implemented here for ${planType} plan (${selectedDuration} months)`);
-  };
-
-  if (!user) {
+  if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold mb-2">Access Required</h2>
-              <p className="text-gray-600 mb-4">Please join our community to access upgrade options.</p>
-              <Link href="/apply">
-                <Button>Apply to Join</Button>
-              </Link>
+      <div className="max-w-4xl mx-auto p-6 min-h-screen flex items-center justify-center">
+        <Card className="glass-card border-white/20">
+          <CardContent className="p-12 text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center mb-6">
+              <Zap className="h-8 w-8 text-white" />
             </div>
+            <h2 className="text-2xl font-heading text-white mb-4">Login Required</h2>
+            <p className="text-gray-400 mb-6">
+              You need to be logged in to upgrade your membership.
+            </p>
+            <Button className="btn-glow">Login</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  if (!pricingData) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-cyan-400" />
+          <p className="text-white">Loading pricing for your region...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
-
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">Upgrade Your Access</h2>
-          <p className="mt-4 text-lg text-gray-600">Choose a plan that fits your builder journey</p>
-        </div>
-
-        {/* Duration Toggle */}
-        <div className="flex justify-center mb-8">
-          <div className="relative bg-gray-100 p-1 rounded-lg">
-            <button
-              onClick={() => setSelectedDuration(3)}
-              className={`relative w-32 py-2 text-sm font-medium rounded-md transition-all ${
-                selectedDuration === 3
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              3 Months
-            </button>
-            <button
-              onClick={() => setSelectedDuration(6)}
-              className={`relative w-32 py-2 text-sm font-medium rounded-md transition-all ${
-                selectedDuration === 6
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              6 Months
-            </button>
-            <button
-              onClick={() => setSelectedDuration(12)}
-              className={`relative w-32 py-2 text-sm font-medium rounded-md transition-all ${
-                selectedDuration === 12
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              12 Months
-            </button>
+    <div className="max-w-7xl mx-auto p-6 min-h-screen pt-24">
+      <div className="text-center mb-16">
+        <Badge className="glass-card border-white/20 text-purple-400 font-mono text-sm px-4 py-2 mb-6">
+          <Globe className="mr-2 h-4 w-4" />
+          {locationInfo ? `${locationInfo.country} Pricing` : 'Global Pricing'}
+        </Badge>
+        <h1 className="text-5xl font-heading mb-6">
+          <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-cyan-400 bg-clip-text text-transparent">
+            UPGRADE YOUR
+          </span>
+          <br />
+          <span className="bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            MEMBERSHIP
+          </span>
+        </h1>
+        <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+          Unlock exclusive projects, submit your own work, and join the inner circle of elite builders worldwide.
+        </p>
+        {userProfile && (
+          <div className="mt-6 flex justify-center">
+            <Badge className={`px-4 py-2 font-mono text-sm ${{
+              'Rookie': 'bg-gradient-to-r from-gray-500 to-gray-600',
+              'Premium': 'bg-gradient-to-r from-yellow-500 to-orange-600',
+              'Inner Circle': 'bg-gradient-to-r from-purple-500 to-pink-600'
+            }[userProfile.role]} text-white`}>
+              CURRENT: {userProfile.role.toUpperCase()}
+            </Badge>
           </div>
-        </div>
-
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 max-w-4xl mx-auto">
-          {/* Premium Plan */}
-          <Card className={`relative ${user.role === "verified" ? "border-2 border-blue-500" : ""}`}>
-            {user.role === "verified" && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-blue-500 text-white">Recommended</Badge>
-              </div>
-            )}
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-gray-900">Premium</CardTitle>
-              <p className="text-gray-600">Perfect for active builders</p>
-              <div className="mt-6">
-                <span className="text-4xl font-bold text-gray-900">
-                  ₹{pricingPlans.premium[selectedDuration]}
-                </span>
-                <span className="text-gray-500">/{selectedDuration} months</span>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Submit unlimited projects</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">View project previews</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Access to Telegram community</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Priority application review</span>
-                </li>
-                <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-3" />
-                  <span className="text-gray-700">Builder verification badge</span>
-                </li>
-              </ul>
-
-              <Button
-                onClick={() => handlePayment("premium")}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                disabled={user.role === "premium" || user.role === "inner" || user.role === "admin"}
-              >
-                {user.role === "premium" ? "Current Plan" : "Choose Premium"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Inner Circle Plan */}
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-gray-900">Inner Circle</CardTitle>
-              <p className="text-gray-600">Exclusive access to everything</p>
-              <div className="mt-6">
-                <span className="text-4xl font-bold text-gray-900">
-                  ₹{pricingPlans.inner[selectedDuration]}
-                </span>
-                <span className="text-gray-500">/{selectedDuration} months</span>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <Crown className="h-5 w-5 text-purple-500 mr-3" />
-                  <span className="text-gray-700">Everything in Premium</span>
-                </li>
-                <li className="flex items-center">
-                  <Crown className="h-5 w-5 text-purple-500 mr-3" />
-                  <span className="text-gray-700">Full access to all secret projects</span>
-                </li>
-                <li className="flex items-center">
-                  <Crown className="h-5 w-5 text-purple-500 mr-3" />
-                  <span className="text-gray-700">God-Tier League projects</span>
-                </li>
-                <li className="flex items-center">
-                  <Crown className="h-5 w-5 text-purple-500 mr-3" />
-                  <span className="text-gray-700">Direct access to project builders</span>
-                </li>
-                <li className="flex items-center">
-                  <Crown className="h-5 w-5 text-purple-500 mr-3" />
-                  <span className="text-gray-700">Exclusive Inner Circle Telegram</span>
-                </li>
-                <li className="flex items-center">
-                  <Crown className="h-5 w-5 text-purple-500 mr-3" />
-                  <span className="text-gray-700">Monthly live sessions with founders</span>
-                </li>
-              </ul>
-
-              <Button
-                onClick={() => handlePayment("inner")}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
-                disabled={user.role === "inner" || user.role === "admin"}
-              >
-                {user.role === "inner" ? "Current Plan" : "Join Inner Circle"}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Payment Security */}
-        <div className="mt-12 text-center">
-          <p className="text-sm text-gray-500 mb-4">Secure payments powered by Razorpay</p>
-          <div className="flex justify-center space-x-6 opacity-60">
-            <CreditCard className="h-8 w-8 text-gray-400" />
-            <Smartphone className="h-8 w-8 text-gray-400" />
-            <University className="h-8 w-8 text-gray-400" />
-          </div>
-        </div>
-
-        {/* Current Status */}
-        {user.role !== "unverified" && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Your Current Plan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-medium text-gray-900 capitalize">{user.role}</p>
-                  {user.paymentExpiry && (
-                    <p className="text-sm text-gray-600">
-                      Expires on {new Date(user.paymentExpiry).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-                <Badge className="bg-green-100 text-green-800">Active</Badge>
-              </div>
-            </CardContent>
-          </Card>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+        {/* Premium Tier */}
+        <Card className="glass-card border-yellow-500 hover-3d relative">
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+            <Badge className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white font-mono px-4 py-2">
+              MOST POPULAR
+            </Badge>
+          </div>
+          <CardHeader className="text-center pb-6">
+            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center mb-6 shadow-2xl shadow-yellow-500/30">
+              <Star className="h-10 w-10 text-white" />
+            </div>
+            <CardTitle className="text-3xl font-heading text-white mb-2">PREMIUM</CardTitle>
+            <p className="text-gray-400">Submit projects and access MVP content</p>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <ul className="space-y-4">
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                Submit your own projects
+              </li>
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                Access to MVP-level projects
+              </li>
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                Telegram Premium group access
+              </li>
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                Digital Hustler ID card
+              </li>
+            </ul>
+
+            <div className="space-y-4">
+              {Object.entries(pricingData.premium).map(([duration, price]) => (
+                <div key={duration} className={`glass p-4 rounded-lg border ${duration === '6' ? 'border-yellow-400' : 'border-white/10'}`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-white font-medium">{duration} months</span>
+                      {duration === '6' && (
+                        <Badge className="ml-2 bg-yellow-500 text-black text-xs">SAVE 20%</Badge>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-white">
+                        {pricingData.symbol}{price}
+                      </span>
+                      <p className="text-sm text-gray-400">
+                        {pricingData.symbol}{Math.round(price / parseInt(duration))}/month
+                      </p>
+                    </div>
+                    <Button 
+                      className="btn-glow ml-4"
+                      onClick={() => handleUpgrade('Premium', parseInt(duration), price)}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Choose'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Inner Circle Tier */}
+        <Card className="glass-card border-purple-500 hover-3d">
+          <CardHeader className="text-center pb-6">
+            <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-6 shadow-2xl shadow-purple-500/30">
+              <Crown className="h-10 w-10 text-white" />
+            </div>
+            <CardTitle className="text-3xl font-heading text-white mb-2">INNER CIRCLE</CardTitle>
+            <p className="text-gray-400">Full access to god-tier projects</p>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <ul className="space-y-4">
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                All Premium features
+              </li>
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                God-tier project access
+              </li>
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                Exclusive Inner Circle Telegram
+              </li>
+              <li className="flex items-center text-gray-300">
+                <Check className="h-5 w-5 text-green-400 mr-4 flex-shrink-0" />
+                Premium Hustler ID card
+              </li>
+            </ul>
+
+            <div className="space-y-4">
+              {Object.entries(pricingData.innerCircle).map(([duration, price]) => (
+                <div key={duration} className={`glass p-4 rounded-lg border ${duration === '6' ? 'border-purple-400' : 'border-white/10'}`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-white font-medium">{duration} months</span>
+                      {duration === '6' && (
+                        <Badge className="ml-2 bg-purple-500 text-white text-xs">SAVE 20%</Badge>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-white">
+                        {pricingData.symbol}{price}
+                      </span>
+                      <p className="text-sm text-gray-400">
+                        {pricingData.symbol}{Math.round(price / parseInt(duration))}/month
+                      </p>
+                    </div>
+                    <Button 
+                      className="btn-glow bg-gradient-to-r from-purple-500 to-pink-600 ml-4"
+                      onClick={() => handleUpgrade('Inner Circle', parseInt(duration), price)}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Choose'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="text-center">
+        <div className="glass-card p-8 max-w-3xl mx-auto border-white/20">
+          <CreditCard className="h-16 w-16 mx-auto text-cyan-400 mb-6" />
+          <h3 className="text-2xl font-heading text-white mb-4">Secure Payment Processing</h3>
+          <p className="text-gray-400 text-lg leading-relaxed">
+            All payments are processed securely through Stripe. You'll receive immediate access after successful payment.
+            Prices are automatically adjusted for your region ({pricingData.currency}).
+          </p>
+          <div className="mt-6 text-sm text-gray-500">
+            <p>💳 All major credit cards accepted • 🔒 256-bit SSL encryption • 🌍 Global currency support</p>
+          </div>
+        </div>
       </div>
     </div>
   );
