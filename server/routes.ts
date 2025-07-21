@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { telegramBot } from "./telegram";
 import { insertApplicationSchema, insertProjectSchema, insertPaymentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -43,6 +44,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertApplicationSchema.parse(req.body);
       const application = await storage.createApplication(validatedData);
+      
+      // Send Telegram notification to admin
+      await telegramBot.notifyNewApplication(application);
+      
       res.json(application);
     } catch (error) {
       res.status(400).json({ message: "Invalid application data" });
@@ -102,6 +107,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         submittedBy,
       });
+      
+      // Get submitter info and send Telegram notification
+      const submitter = await storage.getUser(submittedBy);
+      if (submitter) {
+        await telegramBot.notifyNewProject(project, submitter.name);
+      }
+      
       res.json(project);
     } catch (error) {
       res.status(400).json({ message: "Invalid project data" });

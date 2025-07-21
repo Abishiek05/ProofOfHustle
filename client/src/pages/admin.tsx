@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { authStore } from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
 import { User, Application, Project } from "@shared/schema";
 import { 
@@ -19,14 +19,9 @@ import {
 import { Link } from "wouter";
 
 export default function Admin() {
-  const [user, setUser] = useState<User | null>(authStore.getUser());
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("applications");
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const unsubscribe = authStore.subscribe(setUser);
-    return unsubscribe;
-  }, []);
 
   const { data: applications, isLoading: applicationsLoading } = useQuery<Application[]>({
     queryKey: ["/api/applications"],

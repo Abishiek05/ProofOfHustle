@@ -39,7 +39,7 @@ class AuthStore {
 
   canAccess(requiredRole: string): boolean {
     if (!this.user) return false;
-    
+
     const roleHierarchy = {
       unverified: 0,
       verified: 1,
@@ -50,25 +50,9 @@ class AuthStore {
 
     const userLevel = roleHierarchy[this.user.role as keyof typeof roleHierarchy] || 0;
     const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0;
-    
+
     return userLevel >= requiredLevel;
   }
 }
 
 export const authStore = new AuthStore();
-
-// Demo user for testing
-const demoUser: User = {
-  id: 1,
-  name: "John Doe",
-  email: "john.doe@example.com",
-  password: "hashedpassword",
-  telegramId: "@johndoe",
-  role: "premium",
-  paymentPlan: "premium",
-  paymentExpiry: new Date("2024-03-15"),
-  createdAt: new Date(),
-};
-
-// Set demo user for development
-authStore.setUser(demoUser);

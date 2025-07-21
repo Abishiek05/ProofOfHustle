@@ -53,9 +53,9 @@ export default function Signup() {
       await signup(email, password, name);
       toast({
         title: "Account Created!",
-        description: "Please check your email and verify your account before logging in.",
+        description: "Your application has been submitted for review. Please wait for admin approval.",
       });
-      setLocation('/login');
+      setLocation('/verification-status');
     } catch (error: any) {
       let errorMessage = "Failed to create account. Please try again.";
       

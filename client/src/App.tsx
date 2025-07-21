@@ -14,6 +14,7 @@ import Upgrade from "@/pages/upgrade";
 import Admin from "@/pages/admin";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
+import VerificationStatus from "@/pages/verification-status";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
+      <Route path="/verification-status" component={VerificationStatus} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/projects" component={Projects} />
       <Route path="/apply" component={Apply} />
