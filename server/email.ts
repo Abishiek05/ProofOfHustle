@@ -1,21 +1,37 @@
 
 import nodemailer from 'nodemailer';
 
-// Create a transporter using Gmail SMTP
-// In production, you should use environment variables for credentials
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASS || 'your-app-password'
-  }
-});
+// Check if email credentials are configured
+const isEmailConfigured = process.env.EMAIL_USER && process.env.EMAIL_PASS;
+
+// Create a transporter using Gmail SMTP only if credentials are provided
+let transporter: any = null;
+
+if (isEmailConfigured) {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+} else {
+  console.warn('Email credentials not configured. Verification emails will not be sent.');
+}
 
 export async function sendVerificationEmail(email: string, token: string, userName: string) {
-  const verificationUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/verification-status?token=${token}`;
+  // If email is not configured, log the verification link for development
+  if (!isEmailConfigured || !transporter) {
+    const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verification-status?token=${token}`;
+    console.log(`📧 Email not configured. Verification link for ${email}: ${verificationUrl}`);
+    console.log(`🔗 Direct verification link: /verification-status?token=${token}`);
+    return false;
+  }
+
+  const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verification-status?token=${token}`;
   
   const mailOptions = {
-    from: process.env.EMAIL_USER || 'your-email@gmail.com',
+    from: process.env.EMAIL_USER,
     to: email,
     subject: 'Verify Your Email - Proof of Hustle',
     html: `
@@ -40,10 +56,11 @@ export async function sendVerificationEmail(email: string, token: string, userNa
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Verification email sent to ${email}`);
+    console.log(`✅ Verification email sent to ${email}`);
     return true;
   } catch (error) {
-    console.error('Error sending verification email:', error);
+    console.error('❌ Error sending verification email:', error);
+    console.log(`🔗 Manual verification link for ${email}: /verification-status?token=${token}`);
     return false;
   }
 }

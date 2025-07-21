@@ -9,11 +9,18 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function VerificationStatus() {
   const [status, setStatus] = useState<'pending' | 'verified' | 'failed'>('pending');
+  const [userEmail, setUserEmail] = useState<string>('');
   const { verifyEmail } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    // Get the email from localStorage if available
+    const savedEmail = localStorage.getItem('signup_email');
+    if (savedEmail) {
+      setUserEmail(savedEmail);
+    }
+
     // Check for email verification token in URL
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -77,8 +84,16 @@ export default function VerificationStatus() {
                   <p className="text-gray-300">
                     We've sent a verification email to your inbox.
                   </p>
+                  {userEmail && (
+                    <p className="text-blue-400 text-sm font-medium">
+                      {userEmail}
+                    </p>
+                  )}
                   <p className="text-gray-400 text-sm">
                     Please check your email and click the verification link to continue.
+                  </p>
+                  <p className="text-gray-500 text-xs">
+                    Note: If email service is not configured, check the server console for the verification link.
                   </p>
                 </div>
               </div>

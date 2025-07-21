@@ -20,7 +20,7 @@ export default function Signup() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email || !password || !confirmPassword) {
       toast({
         title: "Missing Information",
@@ -50,26 +50,19 @@ export default function Signup() {
 
     setLoading(true);
     try {
-      await signup(email, password, name);
+      const result = await signup(email, password, name);
       toast({
-        title: "Account Created!",
-        description: "Please check your email to verify your account before applying.",
+        title: "Account created successfully!",
+        description: "Please check your email for verification link.",
       });
+      // Store signup email for verification page
+      localStorage.setItem('signup_email', email);
+      // Redirect to verification status page
       setLocation('/verification-status');
     } catch (error: any) {
-      let errorMessage = "Failed to create account. Please try again.";
-      
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "An account with this email already exists.";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email address.";
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = "Password is too weak. Use at least 6 characters.";
-      }
-      
       toast({
-        title: "Signup Failed",
-        description: errorMessage,
+        title: "Registration failed",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -101,7 +94,7 @@ export default function Signup() {
               Create your account and start building
             </p>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-2">
