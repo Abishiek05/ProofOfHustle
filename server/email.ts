@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 const isEmailConfigured = process.env.EMAIL_USER && process.env.EMAIL_PASS;
 
 // Create a transporter using Gmail SMTP only if credentials are provided
-let transporter: any = null;
+let transporter: nodemailer.Transporter | null = null;
 
 if (isEmailConfigured) {
   transporter = nodemailer.createTransport({
