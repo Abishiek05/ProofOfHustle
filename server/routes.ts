@@ -16,11 +16,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Create user
-      const user = await storage.createUser(userData);
-      res.json({ user: { ...user, password: undefined } });
+      // Create user with unverified email status
+      const user = await storage.createUser({
+        ...userData,
+        emailVerified: false
+      });
+      
+      // In a real application, send verification email here
+      // For now, we'll simulate it
+      console.log(`Email verification link: /verification-status?token=verify_${user.id}`);
+      
+      res.json({ 
+        message: "User created successfully. Please check your email for verification link.",
+        user: { ...user, password: undefined } 
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { token } = req.body;
+      
+      // Extract user ID from token (simplified for demo)
+      const userId = parseInt(token.replace('verify_', ''));
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Invalid verification token" });
+      }
+
+      // Update user email verification status
+      await storage.updateUserEmailVerification(userId, true);
+      
+      res.json({ message: "Email verified successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Email verification failed" });
     }
   });
 

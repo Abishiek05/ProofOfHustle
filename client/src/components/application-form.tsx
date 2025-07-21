@@ -52,6 +52,8 @@ export function ApplicationForm() {
         title: "Application Submitted!",
         description: "We'll review your application and get back to you soon.",
       });
+      // Redirect to review pending page
+      window.location.href = '/review-pending';
       form.reset();
       setSelectedSkills([]);
       setAgreed(false);
@@ -103,7 +105,7 @@ export function ApplicationForm() {
           Tell us about your building experience and goals
         </p>
       </CardHeader>
-      
+
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Personal Information */}
@@ -122,7 +124,7 @@ export function ApplicationForm() {
                 </p>
               )}
             </div>
-            
+
             <div>
               <Label htmlFor="email">Email Address</Label>
               <Input

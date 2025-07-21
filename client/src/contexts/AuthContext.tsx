@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
+  verifyEmail: (token: string) => Promise<any>;
   logout: () => void;
   loading: boolean;
 }
@@ -65,7 +66,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw new Error(data.message || 'Signup failed');
     }
 
-    // Don't auto-login after signup, user needs verification
+    // Don't auto-login after signup, user needs email verification
+    return data;
+  };
+
+  const verifyEmail = async (token: string) => {
+    const response = await apiRequest('POST', '/api/auth/verify-email', { token });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Email verification failed');
+    }
+
     return data;
   };
 
@@ -78,6 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     login,
     signup,
+    verifyEmail,
     logout,
     loading
   };
