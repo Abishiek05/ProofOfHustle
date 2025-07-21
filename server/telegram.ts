@@ -59,10 +59,53 @@ ${application.goals}
 
 📅 <b>Applied:</b> ${new Date().toLocaleString()}
 
-Please review and approve/reject this application in the admin panel.
+<b>Review Actions:</b>
+✅ Approve: /approve_${application.id}
+❌ Reject: /reject_${application.id}
     `;
 
     await this.sendMessage(message);
+  }
+
+  async sendInlineKeyboard(text: string, applicationId: number): Promise<void> {
+    if (!this.config.botToken || !this.config.chatId) {
+      console.log('Telegram not configured, skipping notification:', text);
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${this.config.botToken}/sendMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: this.config.chatId,
+          text: text,
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: '✅ Approve',
+                  callback_data: `approve_${applicationId}`
+                },
+                {
+                  text: '❌ Reject',
+                  callback_data: `reject_${applicationId}`
+                }
+              ]
+            ]
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to send Telegram message:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error sending Telegram message:', error);
+    }
   }
 
   async notifyNewProject(project: any, submitterName: string): Promise<void> {

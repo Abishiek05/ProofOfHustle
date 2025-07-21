@@ -77,8 +77,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertApplicationSchema.parse(req.body);
       const application = await storage.createApplication(validatedData);
       
-      // Send Telegram notification to admin
-      await telegramBot.notifyNewApplication(application);
+      // Send enhanced Telegram notification with inline buttons
+      const message = `
+🔔 <b>New Application Received</b>
+
+👤 <b>Name:</b> ${application.name}
+📧 <b>Email:</b> ${application.email}
+💬 <b>Telegram:</b> ${application.telegramId || 'Not provided'}
+
+📝 <b>Experience:</b>
+${application.experience}
+
+🎯 <b>Current Focus:</b>
+${application.currentFocus}
+
+🚀 <b>Goals:</b>
+${application.goals}
+
+🛠 <b>Skills:</b> ${application.skills.join(', ')}
+
+📅 <b>Applied:</b> ${new Date().toLocaleString()}
+      `;
+      
+      await telegramBot.sendInlineKeyboard(message, application.id);
       
       res.json(application);
     } catch (error) {
@@ -232,6 +253,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(payment);
     } catch (error) {
       res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  // Telegram webhook for admin actions
+  app.post("/api/telegram/webhook", async (req, res) => {
+    try {
+      const { callback_query, message } = req.body;
+      
+      if (callback_query) {
+        const { data } = callback_query;
+        const [action, applicationId] = data.split('_');
+        
+        if (action === 'approve' || action === 'reject') {
+          const status = action === 'approve' ? 'approved' : 'rejected';
+          const reviewedBy = callback_query.from.username || callback_query.from.first_name;
+          
+          const application = await storage.updateApplicationStatus(
+            parseInt(applicationId),
+            status,
+            reviewedBy
+          );
+          
+          if (application && status === 'approved') {
+            // Create user account for approved application
+            const userData = {
+              name: application.name,
+              email: application.email,
+              password: "temppass123", // Should be replaced with secure password generation
+              telegramId: application.telegramId,
+              emailVerified: true
+            };
+            
+            const user = await storage.createUser(userData);
+            await storage.updateUserRole(user.id, "verified");
+          }
+          
+          // Send confirmation message
+          await telegramBot.sendMessage(
+            `✅ Application ${status} successfully!\n\nApplicant: ${application?.name}\nEmail: ${application?.email}`
+          );
+        }
+      }
+      
+      // Handle text commands
+      if (message && message.text) {
+        const text = message.text;
+        if (text.startsWith('/approve_') || text.startsWith('/reject_')) {
+          const [action, applicationId] = text.substring(1).split('_');
+          const status = action === 'approve' ? 'approved' : 'rejected';
+          const reviewedBy = message.from.username || message.from.first_name;
+          
+          const application = await storage.updateApplicationStatus(
+            parseInt(applicationId),
+            status,
+            reviewedBy
+          );
+          
+          if (application && status === 'approved') {
+            const userData = {
+              name: application.name,
+              email: application.email,
+              password: "temppass123",
+              telegramId: application.telegramId,
+              emailVerified: true
+            };
+            
+            const user = await storage.createUser(userData);
+            await storage.updateUserRole(user.id, "verified");
+          }
+          
+          await telegramBot.sendMessage(
+            `✅ Application ${status} successfully!\n\nApplicant: ${application?.name}\nEmail: ${application?.email}`
+          );
+        }
+      }
+      
+      res.json({ ok: true });
+    } catch (error) {
+      console.error('Telegram webhook error:', error);
+      res.status(500).json({ message: "Webhook processing failed" });
     }
   });
 
