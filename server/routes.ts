@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { telegramBot } from "./telegram";
+import { sendVerificationEmail } from "./email";
 import { insertApplicationSchema, insertProjectSchema, insertPaymentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -22,9 +23,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailVerified: false
       });
       
-      // In a real application, send verification email here
-      // For now, we'll simulate it
-      console.log(`Email verification link: /verification-status?token=verify_${user.id}`);
+      // Send verification email
+      const emailSent = await sendVerificationEmail(
+        user.email, 
+        `verify_${user.id}`, 
+        user.name
+      );
+      
+      if (!emailSent) {
+        console.log(`Email sending failed, verification link: /verification-status?token=verify_${user.id}`);
+      }
       
       res.json({ 
         message: "User created successfully. Please check your email for verification link.",

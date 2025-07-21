@@ -96,6 +96,18 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
+  async updateUserEmailVerification(id: number, verified: boolean): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser: User = {
+      ...user,
+      emailVerified: verified,
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
   async createApplication(insertApplication: InsertApplication): Promise<Application> {
     const id = this.currentApplicationId++;
     const application: Application = {

@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   telegramId: text("telegram_id"),
+  emailVerified: boolean("email_verified").notNull().default(false),
   role: text("role", { enum: ["unverified", "verified", "premium", "inner", "admin"] }).notNull().default("unverified"),
   paymentPlan: text("payment_plan"),
   paymentExpiry: timestamp("payment_expiry"),
