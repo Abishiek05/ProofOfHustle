@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { telegramBot } from "./telegram";
+import telegramBot from "./telegram";
 import { sendVerificationEmail } from "./email";
 import { insertApplicationSchema, insertProjectSchema, insertPaymentSchema } from "@shared/schema";
 
